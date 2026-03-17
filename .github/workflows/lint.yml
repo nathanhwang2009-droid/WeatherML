@@ -1,0 +1,75 @@
+name: Lint & Fix
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ruff Check & Format
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Non-blocking: won't fail the workflow
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run Ruff check
+        run: uv run ruff check . --output-format=github
+
+      - name: Run Ruff format check
+        run: uv run ruff format --check .
+
+  auto-fix:
+    name: Auto-fix (Ruff)
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Non-blocking
+    permissions:
+      contents: write  # Required to push fixes
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Auto-fix with Ruff
+        run: |
+          uv run ruff check . --fix
+          uv run ruff format .
+
+      - name: Commit and push fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "style: auto-fix with ruff [skip ci]"
+            git push
+          fi
