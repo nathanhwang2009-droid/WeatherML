@@ -9,6 +9,7 @@ description = "ML project for weather prediction with Streamlit dashboard"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "matplotlib>=3.10.8",
     "numpy>=2.0",
     "pandas>=2.2",
     "scikit-learn>=1.4",

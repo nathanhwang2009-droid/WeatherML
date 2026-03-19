@@ -36,3 +36,5 @@ Thumbs.db
 
 # Weights & Biases
 wandb/
+
+data/raw/daily_weather_data.csv
