@@ -1,4 +1,7 @@
 import pandas as pd
+from pathlib import Path
+
+
 def preprocess_data(df, save_pickle=False, pickle_path=None):
     """
     Preprocess the data by handling missing values and encoding categorical features.
@@ -19,6 +22,11 @@ def preprocess_data(df, save_pickle=False, pickle_path=None):
     df_processed["weather_code"] = df_processed["weather_code"].astype("category")
 
     if save_pickle:
+        if not pickle_path:
+            raise ValueError("pickle_path must be provided when save_pickle=True")
+
+        output_path = Path(pickle_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         df_processed.to_pickle(pickle_path)
         print("Preprocessed data file saved to:", pickle_path)
 
