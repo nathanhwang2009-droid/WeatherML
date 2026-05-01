@@ -1,106 +1,103 @@
 # WeatherML
 
-ML project for weather prediction with Jupyter notebooks for experimentation and Python scripts for model training and a Streamlit dashboard.
+Weather prediction with **Jupyter notebooks**, Python **training utilities** under `src/weatherml`, and a **Vite + React** frontend backed by a **FastAPI** service in [`weatherml-web/`](weatherml-web/).
 
 ## Prerequisites
 
-- **Python 3.12+** (UV will install it if missing)
-- **UV** – fast Python package manager ([install](https://docs.astral.sh/uv/getting-started/installation/))
+- **Python 3.12+** (UV can install it)
+- **[UV](https://docs.astral.sh/uv/getting-started/installation/)** — package manager for the Python project
+- **Node.js 18+** and **npm** — for the web UI (in `weatherml-web/`)
 
-## Quick Start (Partner Setup)
+## Quick start
 
-### 1. Install UV
-
-```bash
-# macOS / Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Windows (PowerShell)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-### 2. Clone and Enter the Project
+### 1. Clone and enter the repo
 
 ```bash
 git clone <repo-url>
 cd WeatherML
 ```
 
-### 3. Create the Virtual Environment & Install Dependencies
+### 2. Python environment
 
-UV creates the virtual environment (`.venv`) and installs all dependencies in one step:
+Install runtime deps plus dev (lint, notebooks) and **web** (FastAPI, Uvicorn):
 
 ```bash
-uv sync
+uv sync --group dev --group web
 ```
 
-This will:
-- Create `.venv` in the project root
-- Install Python 3.12 if needed
-- Install all dependencies from `pyproject.toml`
-- Generate `uv.lock` if missing
+Notebook-only work is fine with `uv sync` alone; add `--group web` when you want to run the API from the repo root.
 
-### 4. Verify Setup
+### 3. Web app (predictor UI)
+
+The API searches **`notebooks/artifacts/`** recursively for **`model.pkl`** or **`best_model.pkl`** (e.g. `notebooks/artifacts/lgb_…/model.pkl` from a training run). If several exist, it loads the **most recently modified** file. Optional: set **`WEATHERML_MODEL_PATH`** to one exact file.
+
+Copy **`feature_columns.json`** and **`weather_code_categories.json`** into that **same folder as the model** if you can; otherwise the API falls back to another copy under **`notebooks/artifacts/`** (newest) or **`weatherml-web/model/`**.
+
+**Terminal A — API (port 8000):**
 
 ```bash
-# Run the Streamlit dashboard
-uv run streamlit run scripts/dashboard.py
+uv run --group web uvicorn main:app --reload --port 8000 --app-dir weatherml-web
+```
 
-# Or train the model
+**Terminal B — frontend (Vite, port 5173):**
+
+```bash
+cd weatherml-web
+npm install
+npm run dev
+```
+
+Open **http://127.0.0.1:5173**. The dev server proxies `/api` to the FastAPI process.
+
+**Alternative — API dependencies only via pip:**
+
+```bash
+cd weatherml-web
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+### 4. Notebooks and training
+
+```bash
+uv run jupyter lab
 uv run python scripts/train.py
 ```
 
-## Development Workflow
+`scripts/train.py` is a stub until you wire it to your pipeline; notebooks under `notebooks/` are the main experimentation path.
 
-### Using the Dev Container (Recommended)
-
-Open the project in **VS Code** or **Cursor** with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. The container will:
-
-- Install UV and Python
-- Run `uv sync` on create and start
-- Forward port 8501 for Streamlit
-
-### Automatic Tasks on Project Open
-
-When opening the project in VS Code/Cursor, two tasks run automatically (if enabled):
-
-1. **Git Pull** – fetches latest changes
-2. **UV Sync** – updates dependencies
-
-To enable: run **Tasks: Manage Automatic Tasks in Folder** (Cmd+Shift+P) → **Allow Automatic Tasks in Folder**.
-
-### Running Commands
-
-All commands use `uv run` so they run inside the project’s virtual environment:
+### Lint and format
 
 ```bash
-uv run streamlit run scripts/dashboard.py   # Dashboard
-uv run python scripts/train.py              # Train model
-uv run jupyter lab                           # Jupyter Lab
-uv run ruff check .                          # Lint
-uv run ruff format .                         # Format
+uv run ruff check .
+uv run ruff format .
 ```
 
-### Weights & Biases (Optional)
+## Dev container
 
-For experiment tracking, set up [W&B](https://wandb.ai/) and log in:
+Open the folder in **VS Code** or **Cursor** with [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). The container runs `uv sync` on create/start. Forwarded ports:
+
+- **5173** — Vite (`npm run dev` in `weatherml-web/`, requires Node locally or a Node feature added to the container)
+- **8000** — FastAPI (`uv run --group web uvicorn …` as above)
+
+Install Node in the container or run the frontend on your host while the API runs in the container.
+
+## Optional: Weights & Biases
 
 ```bash
 uv run wandb login
 ```
 
-Then train with `--wandb`:
+Use W&B from notebooks or once `scripts/train.py` supports logging.
 
-```bash
-uv run python scripts/train.py --wandb
-```
-
-## Project Structure
+## Project layout
 
 ```
-├── notebooks/       # Jupyter notebooks for experimentation
-├── scripts/         # Python scripts (training, dashboard)
-├── src/             # Reusable Python modules
-├── data/            # Raw and processed data
-└── pyproject.toml   # Project config and dependencies
+├── notebooks/          # Experiments; artifacts/ holds exported .pkl (and optional JSON) for the API
+├── scripts/          # CLI helpers (training stub, data scripts)
+├── src/weatherml/    # Shared Python package (model helpers)
+├── weatherml-web/    # FastAPI (main.py), Vite UI; committed JSON defaults under model/
+├── data/             # Datasets (see .gitignore for large paths)
+└── pyproject.toml    # Python deps; [dependency-groups] dev + web
 ```

@@ -4,12 +4,16 @@
   "features": {
     "ghcr.io/devcontainers-extra/features/uv:1": {}
   },
-  "postCreateCommand": "uv sync",
-  "postStartCommand": "uv sync",
-  "forwardPorts": [8501],
+  "postCreateCommand": "uv sync --group dev --group web",
+  "postStartCommand": "uv sync --group dev --group web",
+  "forwardPorts": [5173, 8000],
   "portsAttributes": {
-    "8501": {
-      "label": "Streamlit",
+    "5173": {
+      "label": "Vite (weatherml-web)",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "FastAPI",
       "onAutoForward": "notify"
     }
   },

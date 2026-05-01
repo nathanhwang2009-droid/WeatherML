@@ -1,62 +1,45 @@
-# WeatherML Web Application
+# WeatherML web app
 
-This project is a web application that utilizes a machine learning model to predict weather-related outcomes based on user input. The application is built using Flask and serves as an interface for users to interact with the model.
+**FastAPI** inference API and **Vite + React** UI for the trained weather model.
 
-## Project Structure
+## Run locally
 
-```
-weatherml-web
-├── app.py                # Main application file
-├── templates             # HTML templates for rendering pages
-│   ├── index.html       # Homepage with input form
-│   └── result.html      # Page to display prediction results
-├── static               # Static files (CSS, JS)
-│   ├── css
-│   │   └── styles.css    # Styles for the web application
-│   └── js
-│       └── app.js        # JavaScript for client-side functionality
-├── model                # Directory containing the trained model
-│   └── best_model.pkl    # Serialized machine learning model
-├── requirements.txt      # Python dependencies
-└── README.md             # Project documentation
+**Model:** searches `notebooks/artifacts/` recursively for `model.pkl` or `best_model.pkl` (e.g. run folders like `lgb_lr0.01_…/model.pkl`). If several exist, the newest file wins. Set **`WEATHERML_MODEL_PATH`** to force one path.
+
+**Metadata:** JSON in the **same folder as the chosen model**, else newest under `notebooks/artifacts/`, else `weatherml-web/model/`.
+
+### API (port 8000)
+
+From **repo root** (with `uv sync --group web`):
+
+```bash
+uv run --group web uvicorn main:app --reload --port 8000 --app-dir weatherml-web
 ```
 
-## Setup Instructions
+Or from this directory after `pip install -r requirements.txt`:
 
-1. **Clone the repository:**
-   ```
-   git clone <repository-url>
-   cd weatherml-web
-   ```
+```bash
+uvicorn main:app --reload --port 8000
+```
 
-2. **Create a virtual environment:**
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
+Endpoints:
 
-3. **Install the required packages:**
-   ```
-   pip install -r requirements.txt
-   ```
+- `GET /api/metadata` — weather code list and numeric feature names for the form
+- `POST /api/predict` — JSON body with `date`, `weather_code`, and all numeric features (label column `target` is **not** sent; it is excluded from inference)
 
-4. **Run the application:**
-   ```
-   python app.py
-   ```
+### Frontend (port 5173)
 
-5. **Access the application:**
-   Open your web browser and go to `http://127.0.0.1:5000`.
+```bash
+npm install
+npm run dev
+```
 
-## Usage
+Vite proxies `/api` to `http://127.0.0.1:8000`. Open http://127.0.0.1:5173 .
 
-- On the homepage, enter the required data in the form and submit it to receive predictions from the machine learning model.
-- The results will be displayed on a separate results page.
+### Production build
 
-## Contributing
+```bash
+npm run build
+```
 
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
+Static output is in `dist/`. Serve with your own static host or extend FastAPI with `StaticFiles` if you want a single process.
