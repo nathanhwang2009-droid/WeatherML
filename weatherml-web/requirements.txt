@@ -1,0 +1,9 @@
+Flask
+pandas
+scikit-learn
+joblib
+lightgbm
+numpy
+requests
+flask-wtf
+wtforms
